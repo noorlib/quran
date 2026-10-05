@@ -62,9 +62,6 @@
         transition: background 0.3s;
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       QURAN PAGE
-       ═══════════════════════════════════════════════════════════ */
     .quran-page {
         position: fixed;
         top: 0;
@@ -111,7 +108,6 @@
         z-index: 3;
     }
 
-    /* ═══ WIDE MODE ═══ */
     body.wide-mode .quran-page {
         max-width: 100vw;
         padding: 20px 30px;
@@ -203,29 +199,77 @@
         z-index: 1;
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       WIDE MODE FLOW LAYOUT
-       ═══════════════════════════════════════════════════════════ */
     .page-flow {
         display: flex;
-        flex-wrap: wrap;
-        align-content: center;
+        flex-direction: column;
         justify-content: center;
-        direction: rtl;
+        align-items: center;
         width: 100%;
         height: 100%;
-        gap: 0.55em 0.18em;
         overflow: hidden;
         line-height: 1;
         color: inherit;
+        box-sizing: border-box;
+        padding: 10px 0;
+    }
+
+    body.wide-mode .page-flow > .quran-line.bismillah-line {
+        position: relative;
+        flex: 0 0 auto;
+        width: auto;
+        min-height: 0;
+        margin: 0.35em auto 0.15em;
+        padding: 0;
+        text-align: center;
+        overflow: visible;
+        transform: none;
+        filter: none;
+        opacity: 1;
+        text-rendering: geometricPrecision;
+        -webkit-font-smoothing: antialiased;
+    }
+    body.wide-mode .page-flow > .quran-line.bismillah-line .line-inner {
+        display: flex;
+        justify-content: center;
+        align-items: baseline;
+        overflow: visible;
+        transform: none;
+        filter: none;
+    }
+    body.wide-mode .page-flow > .quran-line.bismillah-line .word {
+        padding: 0;
+        transform: none;
+        filter: none;
+        text-rendering: geometricPrecision;
+    }
+
+    /* فاصلهٔ بین flow-bodyها (جدا کردن متن سوره‌ها) */
+    body.wide-mode .page-flow > .flow-body {
+        margin: 0.25em 0;
+    }
+    body.wide-mode .page-flow > .flow-body:first-child,
+    body.wide-mode .page-flow > .flow-body:last-child {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .flow-body {
+        display: block;
+        width: 100%;
+        text-align: center;
+        line-height: 1.75;
+        direction: rtl;
+        color: inherit;
+        font-size: 16px;
     }
 
     .word-unit {
-        display: inline-flex;
-        align-items: center;
+        display: inline-block;
         white-space: nowrap;
-        flex-shrink: 0;
         line-height: 1;
+        vertical-align: middle;
+        margin: 0 0.055em;
+        color: inherit;
     }
 
     .word-unit .word {
@@ -259,27 +303,6 @@
         box-shadow: inset 0 -2px 0 var(--verse-active-glow);
     }
 
-    .bismillah-surah-name-inline {
-        display: inline-flex;
-        align-items: center;
-        color: var(--verse-marker);
-        font-family: 'Shabnam', sans-serif;
-        font-size: 0.5em;
-        font-weight: 500;
-        opacity: 0.85;
-        white-space: nowrap;
-        direction: rtl;
-        padding: 0.3em 0.75em;
-        border-radius: 0.55em;
-        background: var(--verse-bg);
-        margin-inline: 0.35em;
-        align-self: center;
-        line-height: 1.4;
-    }
-
-    /* ═══════════════════════════════════════════════════════════
-       FLOATING BUTTONS
-       ═══════════════════════════════════════════════════════════ */
     .floating-btn {
         position: fixed;
         top: 14px;
@@ -383,7 +406,6 @@
         max-width: 75%;
     }
 
-    /* ─── دکمه‌های تفسیر — یک رنگ یکسان، فقط نام متفاوت ─── */
     .tafsir-btn {
         border: none;
         color: #fff;
@@ -462,7 +484,6 @@
         visibility: visible;
     }
 
-    /* ── دسکتاپ (حالت تمام‌عرض): عرض پنل تفسیر تقریباً تمام صفحه ── */
     body.wide-mode .tafsir-panel {
         width: 96vw;
         max-width: 96vw;
@@ -472,7 +493,6 @@
         padding: 24px clamp(28px, 6vw, 120px) 48px;
     }
 
-    /* ═══ دکمه‌های ناوبری آیه در تفسیر ═══ */
     .tafsir-nav-btn {
         position: absolute;
         top: 50%;
@@ -505,7 +525,6 @@
     .tafsir-nav-right { right: 10px; }
     .tafsir-nav-left  { left: 10px; }
 
-    /* وقتی کاربر با پنل تعامل می‌کند، دکمه‌ها واضح می‌شوند */
     .tafsir-panel.nav-visible .tafsir-nav-btn { opacity: 0.92; }
 
     .tafsir-handle {
@@ -576,6 +595,30 @@
         border-radius: 3px;
     }
 
+    /* ═══════════════════════════════════════════════════════════
+       اجازه انتخاب و کپی متن در پنل تفسیر
+       ═══════════════════════════════════════════════════════════ */
+    .tafsir-content,
+    .tafsir-content * {
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+    }
+    .tafsir-content {
+        cursor: text;
+        touch-action: pan-y pinch-zoom;
+        -webkit-touch-callout: default;
+    }
+    .tafsir-content ::selection {
+        background: var(--divine-color);
+        color: #fff;
+    }
+    .tafsir-content ::-moz-selection {
+        background: var(--divine-color);
+        color: #fff;
+    }
+
     .tafsir-content .tafsir-arabic {
         font-family: 'Traditional Arabic', 'Scheherazade New', serif;
         font-size: 1.15em;
@@ -590,7 +633,6 @@
         margin-bottom: 12px;
     }
 
-    /* برچسب‌های معنوی: 📖آیه و 📝ترجمه */
     .tafsir-content .manavi-label {
         display: inline-block;
         color: var(--verse-marker);
@@ -622,9 +664,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ═══════════════════════════════════════════════════════════
-       SETTINGS PANEL
-       ═══════════════════════════════════════════════════════════ */
     .settings-overlay {
         position: fixed;
         inset: 0;
@@ -793,7 +832,6 @@
     }
     .theme-card.active .theme-check { display: inline; }
 
-    /* ── Toggle Switch ── */
     .toggle-row {
         display: flex;
         align-items: center;
@@ -852,9 +890,6 @@
         transform: translateX(-20px);
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       SIDEBAR
-       ═══════════════════════════════════════════════════════════ */
     .sidebar {
         position: fixed;
         top: 0;
@@ -1088,14 +1123,12 @@
 <div class="tafsir-panel" id="tafsirPanel">
     <div class="tafsir-handle"></div>
 
-    <!-- دکمه ناوبری آیه قبلی (سمت راست در RTL) -->
     <button class="tafsir-nav-btn tafsir-nav-right" id="tafsirNavRight" aria-label="آیه قبلی">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"/>
         </svg>
     </button>
 
-    <!-- دکمه ناوبری آیه بعدی (سمت چپ در RTL) -->
     <button class="tafsir-nav-btn tafsir-nav-left" id="tafsirNavLeft" aria-label="آیه بعدی">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"/>
@@ -1283,21 +1316,21 @@ let currentPage = 1;
 let renderToken = 0;
 let wideMode = false;
 const loadedFonts = new Set();
+const failedFonts = new Set();
 const pageCache = new Map();
 
 let surahListData = null;
 let selectedVerse = null;
 let selectedWordEl = null;
 let currentTafsirType = null;
-let currentTafsirKey = null;   // کلید ۶رقمی آیه‌ای که در پنل تفسیر نمایش داده می‌شود
+let currentTafsirKey = null;
 
-// ── داده‌های شش تفسیر ──
-let tafsirDataRovaei = null;   // روایات    (array)
-let tafsirDataNemuneh = null;  // نمونه
-let tafsirDataMizan  = null;   // المیزان
-let tafsirDataNoor   = null;   // نور
-let tafsirDataManavi = null;   // معنوی (فایل ساخته‌شده)
-let tafsirDataBaran  = null;   // باران (بعداً اضافه می‌شود)
+let tafsirDataRovaei = null;
+let tafsirDataNemuneh = null;
+let tafsirDataMizan  = null;
+let tafsirDataNoor   = null;
+let tafsirDataManavi = null;
+let tafsirDataBaran  = null;
 
 let tafsirLoaded = false;
 let tafsirLoading = false;
@@ -1305,9 +1338,6 @@ let tafsirLoading = false;
 let asmaData = null;
 let tafsirFontSize = 17;
 
-// ═══════════════════════════════════════════════════════════════
-//  DOM REFS
-// ═══════════════════════════════════════════════════════════════
 const $ = id => document.getElementById(id);
 const quranPageEl   = $('quranPage');
 const loadingScreen = $('loadingScreen');
@@ -1319,7 +1349,6 @@ const verseBar      = $('verseBar');
 const verseLabel    = $('verseLabel');
 const verseClose    = $('verseClose');
 
-// شش دکمه تفسیر
 const btnTafsirRovaei  = $('btnTafsirRovaei');
 const btnTafsirNemuneh = $('btnTafsirNemuneh');
 const btnTafsirMizan   = $('btnTafsirMizan');
@@ -1328,12 +1357,8 @@ const btnTafsirManavi  = $('btnTafsirManavi');
 const btnTafsirBaran   = $('btnTafsirBaran');
 
 const ALL_TAFSIR_BTNS = [
-    btnTafsirRovaei,
-    btnTafsirNemuneh,
-    btnTafsirMizan,
-    btnTafsirNoor,
-    btnTafsirManavi,
-    btnTafsirBaran,
+    btnTafsirRovaei, btnTafsirNemuneh, btnTafsirMizan,
+    btnTafsirNoor, btnTafsirManavi, btnTafsirBaran,
 ];
 
 const tafsirOverlay = $('tafsirOverlay');
@@ -1397,34 +1422,47 @@ function updatePageInfo(pageNum, data) {
 // ═══════════════════════════════════════════════════════════════
 function loadFont(fontFamily) {
     if (!fontFamily || loadedFonts.has(fontFamily)) return Promise.resolve();
-    return new Promise(resolve => {
-        const styleId = `font-${fontFamily}`;
-        if (document.getElementById(styleId)) {
-            loadedFonts.add(fontFamily);
-            return resolve();
-        }
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-            @font-face {
-                font-family: '${fontFamily}';
-                src: url('fonts/${fontFamily}_W.woff2') format('woff2');
-                font-display: block;
+    loadedFonts.add(fontFamily);
+
+    const url = `fonts/${fontFamily}_W.woff2`;
+    const styleId = `font-${fontFamily}`;
+
+    if (document.getElementById(styleId)) {
+        return Promise.resolve();
+    }
+
+    return fetch(url, { method: 'HEAD' })
+        .then(head => {
+            if (!head.ok) {
+                failedFonts.add(fontFamily);
+                return;
             }
-        `;
-        document.head.appendChild(style);
-        if (document.fonts && document.fonts.load) {
-            document.fonts.load(`1em '${fontFamily}'`)
-                .then(() => requestAnimationFrame(() => {
-                    loadedFonts.add(fontFamily);
-                    resolve();
-                }))
-                .catch(() => { loadedFonts.add(fontFamily); resolve(); });
-        } else {
-            loadedFonts.add(fontFamily);
-            setTimeout(resolve, 80);
-        }
-    });
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                @font-face {
+                    font-family: '${fontFamily}';
+                    src: url('${url}') format('woff2');
+                    font-display: block;
+                }
+            `;
+            document.head.appendChild(style);
+
+            if (!document.fonts || !document.fonts.load) return;
+
+            return document.fonts.load(`1em '${fontFamily}'`)
+                .then(faces => {
+                    if (!faces || faces.length === 0) {
+                        failedFonts.add(fontFamily);
+                    }
+                })
+                .catch(() => {
+                    failedFonts.add(fontFamily);
+                });
+        })
+        .catch(() => {
+            failedFonts.add(fontFamily);
+        });
 }
 
 async function loadPageData(pageNum) {
@@ -1469,58 +1507,49 @@ function isVerseMarker(word) {
     return false;
 }
 
-function isBismillahLine(line) {
-    const words = line.words || [];
-    if (words.length < 15) return false;
-    const texts = [];
-    let lastText = null;
-    for (const w of words) {
-        const t = w.text;
-        if (t && t !== lastText) {
-            texts.push(t);
-            lastText = t;
-        }
-    }
-    if (texts.length !== 4) return false;
-    const normalized = texts.map(t =>
-        stripDiacritics(t)
-            .replace(/[\u0671\u0622\u0623\u0625]/g, 'ا')
-            .replace(/[\u0649\u064A]/g, 'ی')
-            .replace(/\u0640/g, '')
-            .replace(/\s+/g, '')
-            .trim()
-    );
-    return normalized[0] === 'بسم' && normalized[1] === 'الله' &&
-           normalized[2] === 'الرحمن' && normalized[3] === 'الرحیم';
-}
-
-function getBismillahSurahName(line, pageData) {
-    const words = line.words || [];
-    if (!words.length) return null;
-    for (const w of words) {
-        if (w.verse_key) {
-            const surahNum = parseInt(w.verse_key.split(':')[0]);
-            if (surahNum >= 1 && surahNum <= 114) {
-                if (pageData?.surahs) {
-                    const s = pageData.surahs.find(x => x.id === surahNum);
-                    if (s) return s.name_arabic || s.name || `سوره ${surahNum}`;
-                }
-                if (surahListData) {
-                    const s = surahListData.find(x => x.id === surahNum);
-                    if (s) return s.name;
-                }
-                return `سوره ${surahNum}`;
-            }
-        }
-    }
-    if (pageData?.surahs?.length === 1) {
-        return pageData.surahs[0].name_arabic || pageData.surahs[0].name;
-    }
-    return null;
+function filterSurahHeaderWords(words) {
+    return (words || []).filter(w => w.type !== 'surah_header');
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  BUILD LINE (حالت عادی)
+//  تشخیص خط بسم‌الله
+// ═══════════════════════════════════════════════════════════════
+function isBismillahLine(line) {
+    const words = filterSurahHeaderWords(line.words);
+    if (!words.length) return false;
+    return words.every(w => {
+        if (w.type === 'bismillah' || w.type === 'basmala' || w.type === 'basmalah') return true;
+        const t = String(w.text || '');
+        return t.includes('بسم') || t.includes('بِسْم');
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WORD SPAN BUILDER
+// ═══════════════════════════════════════════════════════════════
+function makeWordSpan(w, defaultFont) {
+    const span = document.createElement('span');
+    span.className = 'word';
+    const f = w.font || defaultFont;
+    if (f) span.style.fontFamily = `'${f}', serif`;
+    span.textContent = w.char || (w.code ? String.fromCodePoint(w.code) : '');
+
+    if (w.verse_key) {
+        span.dataset.verse = w.verse_key;
+        span.dataset.pos = w.position || 0;
+    }
+    if (w.text) span.dataset.text = w.text;
+    if (w.type) span.dataset.type = w.type;
+
+    if (w.verse_key && isDivineName(w, w.verse_key, w.position || 0)) {
+        span.classList.add('divine-name');
+    }
+    if (isVerseMarker(w)) span.classList.add('verse-marker');
+    return span;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  BUILD LINE — حالت عادی (موبایل)
 // ═══════════════════════════════════════════════════════════════
 function buildLine(line, defaultFont, pageData) {
     const lineEl = document.createElement('div');
@@ -1529,104 +1558,75 @@ function buildLine(line, defaultFont, pageData) {
     const inner = document.createElement('div');
     inner.className = 'line-inner';
 
-    for (const w of line.words || []) {
-        const span = document.createElement('span');
-        span.className = 'word';
-        const f = w.font || defaultFont;
-        if (f) span.style.fontFamily = `'${f}', serif`;
-        span.textContent = w.char || (w.code ? String.fromCodePoint(w.code) : '');
-
-        if (w.verse_key) {
-            span.dataset.verse = w.verse_key;
-            span.dataset.pos = w.position || 0;
-        }
-        if (w.text) span.dataset.text = w.text;
-        if (w.type) span.dataset.type = w.type;
-
-        if (w.verse_key && isDivineName(w, w.verse_key, w.position || 0)) {
-            span.classList.add('divine-name');
-        }
-        if (isVerseMarker(w)) span.classList.add('verse-marker');
-
-        inner.appendChild(span);
+    for (const w of (line.words || [])) {
+        inner.appendChild(makeWordSpan(w, defaultFont));
     }
 
     lineEl.appendChild(inner);
-
-    if (isBismillahLine(line)) {
-        lineEl.classList.add('bismillah-line');
-        const surahName = getBismillahSurahName(line, pageData);
-        if (surahName) {
-            const nameEl = document.createElement('span');
-            nameEl.className = 'bismillah-surah-name';
-            nameEl.textContent = surahName;
-            lineEl.appendChild(nameEl);
-        }
-    }
-
     return lineEl;
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  BUILD FLOW (حالت تمام‌عرض)
+//  BUILD FLOW — حالت تمام‌عرض (دسکتاپ)
+//  اصلاح‌شده: ترتیب اصلی خطوط حفظ می‌شود. وقتی به خط بسم‌الله
+//  می‌رسیم، متن قبلی flush می‌شود، بسم‌الله در جای خودش اضافه
+//  می‌شود و یک flow-body جدید برای ادامه متن باز می‌گردد.
 // ═══════════════════════════════════════════════════════════════
 function buildFlow(pageData) {
-    const flow = document.createElement('div');
-    flow.className = 'page-flow';
+    const flowContainer = document.createElement('div');
+    flowContainer.className = 'page-flow';
+
+    let body = document.createElement('div');
+    body.className = 'flow-body';
 
     let currentGroup = null;
     let currentText = null;
 
-    for (const line of (pageData.lines || [])) {
-        if (isBismillahLine(line)) {
-            const name = getBismillahSurahName(line, pageData);
-            if (name) {
-                if (currentGroup) {
-                    flow.appendChild(currentGroup);
-                    currentGroup = null;
-                    currentText = null;
-                }
-                const badge = document.createElement('span');
-                badge.className = 'bismillah-surah-name-inline';
-                badge.textContent = name;
-                flow.appendChild(badge);
-            }
+    const flushGroup = () => {
+        if (currentGroup) {
+            body.appendChild(currentGroup);
+            currentGroup = null;
+            currentText = null;
         }
+    };
 
-        for (const w of line.words || []) {
-            const text = w.text || '';
+    const flushBody = () => {
+        flushGroup();
+        if (body.childNodes.length > 0) {
+            flowContainer.appendChild(body);
+        }
+        body = document.createElement('div');
+        body.className = 'flow-body';
+    };
 
-            if (text !== currentText) {
-                if (currentGroup) flow.appendChild(currentGroup);
-                currentGroup = document.createElement('span');
-                currentGroup.className = 'word-unit';
-                currentText = text;
-            }
+    const appendWord = (w) => {
+        const text = w.text || '';
+        if (text !== currentText) {
+            flushGroup();
+            currentGroup = document.createElement('span');
+            currentGroup.className = 'word-unit';
+            currentText = text;
+        }
+        currentGroup.appendChild(makeWordSpan(w, pageData.font));
+    };
 
-            const span = document.createElement('span');
-            span.className = 'word';
-            const f = w.font || pageData.font;
-            if (f) span.style.fontFamily = `'${f}', serif`;
-            span.textContent = w.char || (w.code ? String.fromCodePoint(w.code) : '');
-
-            if (w.verse_key) {
-                span.dataset.verse = w.verse_key;
-                span.dataset.pos = w.position || 0;
-            }
-            if (w.text) span.dataset.text = w.text;
-            if (w.type) span.dataset.type = w.type;
-
-            if (w.verse_key && isDivineName(w, w.verse_key, w.position || 0)) {
-                span.classList.add('divine-name');
-            }
-            if (isVerseMarker(w)) span.classList.add('verse-marker');
-
-            currentGroup.appendChild(span);
+    for (const line of (pageData.lines || [])) {
+        // خط بسم‌الله → در جای خودش، به‌صورت مستقل
+        if (isBismillahLine(line)) {
+            flushBody();                                   // متن قبلی را ببند
+            const lineEl = buildLine(line, pageData.font, pageData);
+            lineEl.classList.add('bismillah-line');
+            flowContainer.appendChild(lineEl);             // بسم‌الله سرجای خودش
+            continue;                                      // ادامه با flow-body جدید
+        }
+        // متن عادی → داخل flow-body فعلی
+        for (const w of filterSurahHeaderWords(line.words)) {
+            appendWord(w);
         }
     }
-    if (currentGroup) flow.appendChild(currentGroup);
+    flushBody();
 
-    return flow;
+    return flowContainer;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1658,6 +1658,7 @@ async function renderPage(pageNum) {
         (data.lines || []).forEach(line => {
             (line.words || []).forEach(w => { if (w.font) fonts.add(w.font); });
         });
+
         await Promise.all([...fonts].map(loadFont));
         if (myToken !== renderToken) return;
 
@@ -1676,8 +1677,12 @@ async function renderPage(pageNum) {
 
         requestAnimationFrame(() => {
             if (myToken !== renderToken) return;
-            if (wideMode) fitFlowContent();
-            else fitContent();
+            if (wideMode) {
+                fitFlowContent();
+                fitBismillahLines();
+            } else {
+                fitContent();
+            }
             loadingScreen.classList.add('hidden');
         });
 
@@ -1689,13 +1694,12 @@ async function renderPage(pageNum) {
 
     } catch (err) {
         if (myToken !== renderToken) return;
-        console.error('Render error:', err);
         loadingScreen.classList.add('hidden');
     }
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  FIT CONTENT (حالت عادی)
+//  FIT CONTENT (حالت عادی — موبایل)
 // ═══════════════════════════════════════════════════════════════
 function fitContent() {
     const lines = quranPageEl.children;
@@ -1732,35 +1736,75 @@ function fitContent() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  FIT FLOW (حالت تمام‌عرض)
+//  FIT FLOW (حالت تمام‌عرض — دسکتاپ)
+//  اصلاح‌شده: حالا ممکن است چند flow-body وجود داشته باشد که
+//  با خطوط بسم‌الله از هم جدا شده‌اند. مجموع ارتفاع همه لحاظ می‌شود.
 // ═══════════════════════════════════════════════════════════════
 function fitFlowContent() {
-    const flow = quranPageEl.querySelector('.page-flow');
-    if (!flow) return;
+    const flowContainer = quranPageEl.querySelector('.page-flow');
+    if (!flowContainer) return;
 
-    const style = getComputedStyle(quranPageEl);
+    const bodies = flowContainer.querySelectorAll('.flow-body');
+    if (bodies.length === 0) return;
+
+    const style = getComputedStyle(flowContainer);
     const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    const availH = quranPageEl.clientHeight - padY;
+    const availH = flowContainer.clientHeight - padY;
 
-    flow.style.height = 'auto';
-    flow.style.overflow = 'visible';
+    // ارتفاع خطوط بسم‌الله (ثابت، مستقل از فونت flow-body)
+    let bismillahH = 0;
+    flowContainer.querySelectorAll(':scope > .quran-line.bismillah-line').forEach(el => {
+        bismillahH += el.getBoundingClientRect().height;
+    });
+
+    const availForBody = availH - bismillahH;
+    if (availForBody <= 0) return;
+
+    const totalBodyHeight = () => {
+        let sum = 0;
+        bodies.forEach(b => sum += b.offsetHeight);
+        return sum;
+    };
 
     let lo = 8, hi = 140, best = 14;
     for (let i = 0; i < 12; i++) {
         const mid = (lo + hi) / 2;
-        flow.style.fontSize = mid + 'px';
-        void flow.offsetHeight;
-        if (flow.offsetHeight <= availH) {
+        bodies.forEach(b => b.style.fontSize = mid + 'px');
+        void bodies[0].offsetHeight;                       // اجبار به reflow
+        if (totalBodyHeight() <= availForBody) {
             best = mid;
             lo = mid;
         } else {
             hi = mid;
         }
     }
-    flow.style.fontSize = best + 'px';
+    bodies.forEach(b => b.style.fontSize = best + 'px');
+}
 
-    flow.style.height = '';
-    flow.style.overflow = '';
+// ═══════════════════════════════════════════════════════════════
+//  FIT BISMILLAH LINES
+//  اندازه بسم‌الله را با سقف ~25px تنظیم می‌کند تا کروم گلیف
+//  را بیش‌ازحد بزرگ رستر نکند.
+// ═══════════════════════════════════════════════════════════════
+function fitBismillahLines() {
+    if (!wideMode) return;
+    const pageW = quranPageEl.clientWidth;
+    const maxW = Math.min(pageW - 48, Math.round(window.innerHeight * 0.62));
+
+    quranPageEl.querySelectorAll('.page-flow > .quran-line.bismillah-line').forEach(lineEl => {
+        const inner = lineEl.querySelector('.line-inner');
+        if (!inner) return;
+
+        lineEl.style.width = maxW + 'px';
+        const REF = 100;
+        lineEl.style.fontSize = REF + 'px';
+        void inner.offsetWidth;
+
+        const w = inner.getBoundingClientRect().width;
+        let fs = 36;
+        if (w > 0) fs = Math.floor(REF * (maxW / w) * 0.96);
+        lineEl.style.fontSize = Math.max(18, Math.min(fs, 25)) + 'px';
+    });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1819,13 +1863,12 @@ verseClose.addEventListener('click', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-//  TAFSIR — 6 نوع
+//  TAFSIR
 // ═══════════════════════════════════════════════════════════════
 function buildTafsirKey(sura, aya) {
     return String(sura).padStart(3, '0') + String(aya).padStart(3, '0');
 }
 
-// حل مقدار تفسیر (پشتیبانی از ref: و ارجاع ۶رقمی خام)
 function resolveTafsirText(data, key) {
     if (!data) return null;
     let v = data[key];
@@ -1835,7 +1878,6 @@ function resolveTafsirText(data, key) {
         v = data[v.substring(4)];
         return typeof v === 'string' ? v : null;
     }
-    // ارجاع خام شش‌رقمی — فرمت فایل معنوی
     if (/^\d{6}$/.test(v)) {
         const target = data[v];
         return typeof target === 'string' ? target : null;
@@ -1876,7 +1918,6 @@ function loadTafsirFiles() {
     return Promise.all(promises).then(() => {
         tafsirLoaded = true;
         tafsirLoading = false;
-        // پاکسازی کش کلیدها (اگر قبلاً پر شده بود)
         for (const k in validKeysCache) delete validKeysCache[k];
         if (selectedVerse) {
             const [s, a] = selectedVerse.split(':').map(Number);
@@ -1892,12 +1933,10 @@ function updateTafsirButtons(sura, aya) {
     }
     const key = buildTafsirKey(sura, aya);
 
-    // روایات: array از { ar, fa }
     const rovArr = tafsirDataRovaei?.[key];
     const hasRovaei = Array.isArray(rovArr) && rovArr.length > 0;
     btnTafsirRovaei.classList.toggle('visible', hasRovaei);
 
-    // بقیه: string (با پشتیبانی ref)
     const hasNemuneh = !!resolveTafsirText(tafsirDataNemuneh, key)?.trim();
     btnTafsirNemuneh.classList.toggle('visible', hasNemuneh);
 
@@ -1914,7 +1953,6 @@ function updateTafsirButtons(sura, aya) {
     btnTafsirBaran.classList.toggle('visible', hasBaran);
 }
 
-// ── متادیتای تفسیرها ──
 const TAFSIR_META = {
     rovaei:  { title: 'تفسیر روایات' },
     nemuneh: { title: 'تفسیر نمونه'  },
@@ -1924,7 +1962,6 @@ const TAFSIR_META = {
     baran:   { title: 'تفسیر باران'  },
 };
 
-// اتصال رویدادها
 btnTafsirRovaei .addEventListener('click', () => openTafsir('rovaei'));
 btnTafsirNemuneh.addEventListener('click', () => openTafsir('nemuneh'));
 btnTafsirMizan  .addEventListener('click', () => openTafsir('mizan'));
@@ -1962,7 +1999,6 @@ function renderTafsir(type, key) {
         return d.innerHTML;
     };
 
-    // ── روایات: آرایه‌ای از { ar, fa } ──
     if (type === 'rovaei') {
         const entries = tafsirDataRovaei?.[key];
         if (!Array.isArray(entries) || entries.length === 0) {
@@ -1978,7 +2014,6 @@ function renderTafsir(type, key) {
         return;
     }
 
-    // ── بقیه: رشته ──
     const dataMap = {
         nemuneh: tafsirDataNemuneh,
         mizan:   tafsirDataMizan,
@@ -2000,7 +2035,6 @@ function renderTafsir(type, key) {
         return;
     }
 
-    // ── استایل مخصوص معنوی ──
     if (type === 'manavi') {
         tafsirContent.innerHTML = renderManavi(text, escape);
         return;
@@ -2009,7 +2043,6 @@ function renderTafsir(type, key) {
     tafsirContent.innerHTML = escape(text).replace(/\n/g, '<br>');
 }
 
-// رندر زیبا برای تفسیر معنوی (📖آیه / 📝ترجمه)
 function renderManavi(text, escape) {
     const parts = text.split(/(?=📖آیه|📝ترجمه)/);
     let html = '';
@@ -2057,7 +2090,7 @@ tafsirFontInc.addEventListener('click', () => setTafsirFontSize(tafsirFontSize +
 tafsirFontDec.addEventListener('click', () => setTafsirFontSize(tafsirFontSize - 1));
 
 // ═══════════════════════════════════════════════════════════════
-//  TAFSIR NAVIGATION (آیات قبل/بعد)
+//  TAFSIR NAVIGATION
 // ═══════════════════════════════════════════════════════════════
 const validKeysCache = {};
 
@@ -2108,7 +2141,6 @@ function updateNavButtons() {
         tafsirNavLeft.classList.add('hidden');
         return;
     }
-    // در RTL: دکمه سمت راست = آیه قبلی، دکمه سمت چپ = آیه بعدی
     tafsirNavRight.classList.toggle('hidden', idx <= 0);
     tafsirNavLeft.classList.toggle('hidden', idx >= keys.length - 1);
 }
@@ -2125,22 +2157,18 @@ function navigateTafsir(direction) {
     const aya  = parseInt(newKey.substring(3, 6), 10);
     const verseKey = `${sura}:${aya}`;
 
-    // به‌روزرسانی state
     selectedVerse = verseKey;
     currentTafsirKey = newKey;
 
-    // عنوان‌ها
     const surah = surahListData?.find(s => s.id === sura);
     const surahName = surah?.name || `سوره ${sura}`;
     tafsirVerseInfo.textContent = `${surahName} — آیه ${toAr(aya)}`;
 
-    // هماهنگ‌سازی نوار پایین اگر باز باشد
     if (verseBar.classList.contains('visible')) {
         verseLabel.textContent = `${surahName} — آیه ${toAr(aya)}`;
         updateTafsirButtons(sura, aya);
     }
 
-    // رندر مجدد
     tafsirContent.innerHTML = '<div class="tafsir-loading"><div class="tafsir-spinner"></div><span>در حال بارگذاری...</span></div>';
     tafsirContent.scrollTop = 0;
 
@@ -2155,7 +2183,6 @@ function navigateTafsir(direction) {
 tafsirNavRight.addEventListener('click', () => navigateTafsir(-1));
 tafsirNavLeft.addEventListener('click',  () => navigateTafsir(1));
 
-// ── رفتار محو شدن دکمه‌های ناوبری ──
 let navFadeTimer = null;
 
 function showNavButtons() {
@@ -2166,7 +2193,6 @@ function showNavButtons() {
     }, 3000);
 }
 
-// با کلیک روی پنل تفسیر (به جز خود دکمه‌ها) دکمه‌ها آشکار و بعد از ۳ ثانیه محو می‌شوند
 tafsirPanel.addEventListener('click', e => {
     if (e.target.closest('.tafsir-nav-btn')) return;
     showNavButtons();
@@ -2215,7 +2241,6 @@ async function buildSurahList() {
         if (!res.ok) throw new Error('verses.json not found');
         verses = await res.json();
     } catch(e) {
-        console.warn('Cannot load verses.json:', e);
         return [];
     }
 
@@ -2424,14 +2449,22 @@ let resizeTimer;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-        if (wideMode) fitFlowContent();
-        else fitContent();
+        if (wideMode) {
+            fitFlowContent();
+            fitBismillahLines();
+        } else {
+            fitContent();
+        }
     }, 200);
 });
 window.addEventListener('orientationchange', () => {
     setTimeout(() => {
-        if (wideMode) fitFlowContent();
-        else fitContent();
+        if (wideMode) {
+            fitFlowContent();
+            fitBismillahLines();
+        } else {
+            fitContent();
+        }
     }, 300);
 });
 
@@ -2475,9 +2508,7 @@ async function init() {
     buildSurahList().then(() => {
         renderSurahList();
         highlightCurrentSurah(currentPage);
-    }).catch(err => {
-        console.warn('Surah list failed:', err);
-    });
+    }).catch(() => {});
 
     loadTafsirFiles();
 }
