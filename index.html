@@ -40,6 +40,31 @@
         --verse-bg: rgba(26, 77, 46, 0.10);
         --verse-active-bg: rgba(26, 77, 46, 0.22);
         --verse-active-glow: rgba(26, 77, 46, 0.35);
+
+        --text-brightness: 1;
+        --dim-overlay: 0;
+    }
+
+    /* ═══ لایهٔ تاریکی شب — بین صفحهٔ قرآن و رابط کاربری ═══ */
+    #dimOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 89;
+        pointer-events: none;
+        background: transparent;
+        transition: background 0.25s;
+    }
+    body.night #dimOverlay {
+        background: rgba(0, 0, 0, var(--dim-overlay, 0));
+    }
+
+    /* ═══ کاهش روشنایی متن فقط در تم تاریک ═══ */
+    body.night #quranPage > .quran-line,
+    body.night #quranPage > .page-flow {
+        filter: brightness(var(--text-brightness, 1));
+    }
+    body.night .tafsir-content {
+        filter: brightness(var(--text-brightness, 1));
     }
 
     * {
@@ -243,7 +268,6 @@
         text-rendering: geometricPrecision;
     }
 
-    /* فاصلهٔ بین flow-bodyها (جدا کردن متن سوره‌ها) */
     body.wide-mode .page-flow > .flow-body {
         margin: 0.25em 0;
     }
@@ -595,9 +619,6 @@
         border-radius: 3px;
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       اجازه انتخاب و کپی متن در پنل تفسیر
-       ═══════════════════════════════════════════════════════════ */
     .tafsir-content,
     .tafsir-content * {
         user-select: text !important;
@@ -890,6 +911,42 @@
         transform: translateX(-20px);
     }
 
+    /* ═══ اسلایدرهای کاهش نور شب ═══ */
+    .slider-row {
+        padding: 10px 14px;
+        background: var(--menu-hover);
+        border: 1px solid var(--menu-border);
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+    .slider-row:last-child { margin-bottom: 0; }
+    .slider-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+    .slider-label {
+        color: var(--menu-text);
+        font-size: 13px;
+        font-weight: 500;
+    }
+    .slider-value {
+        color: var(--divine-color);
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .slider-row input[type="range"] {
+        width: 100%;
+        accent-color: var(--divine-color);
+        cursor: pointer;
+        direction: ltr;
+        margin: 0;
+    }
+    body:not(.night) .slider-row {
+        opacity: 0.6;
+    }
+
     .sidebar {
         position: fixed;
         top: 0;
@@ -1079,6 +1136,8 @@
 </head>
 <body>
 
+<div id="dimOverlay" aria-hidden="true"></div>
+
 <div class="loading-screen" id="loadingScreen">
     <div class="loading-spinner"></div>
 </div>
@@ -1170,6 +1229,25 @@
                 <span class="toggle-desc">متن در کل عرض صفحه پخش می‌شود و اندازهٔ فونت خودکار تنظیم می‌گردد</span>
             </div>
             <div class="toggle-switch"></div>
+        </div>
+
+        <div class="settings-section-title" style="margin-top:18px;">
+            کاهش نور شب
+            <span style="font-size:11px;color:var(--menu-sub);font-weight:400;">(اثر فقط در تم تاریک)</span>
+        </div>
+        <div class="slider-row">
+            <div class="slider-header">
+                <span class="slider-label">روشنایی متن</span>
+                <span class="slider-value" id="textBrightnessValue">۱۰۰٪</span>
+            </div>
+            <input type="range" id="textBrightnessSlider" min="10" max="100" value="100" step="1">
+        </div>
+        <div class="slider-row">
+            <div class="slider-header">
+                <span class="slider-label">تاریکی لایه</span>
+                <span class="slider-value" id="dimOverlayValue">۰٪</span>
+            </div>
+            <input type="range" id="dimOverlaySlider" min="0" max="95" value="0" step="1">
         </div>
 
         <div class="settings-section-title" style="margin-top:18px;">تم مطالعه (مناسب قرائت طولانی)</div>
@@ -1312,12 +1390,18 @@ const PAGES_PATH = 'data/pages/';
 const TAFSIR_PATH = 'data/tafsir/';
 const ASMA_PATH = 'data/asma.json';
 
+const PAGE_CACHE_MAX = 30;
+const PREFETCH_BEHIND = 1;   // صفحات قبل
+const PREFETCH_AHEAD  = 5;   // صفحات بعد
+
 let currentPage = 1;
 let renderToken = 0;
 let wideMode = false;
 const loadedFonts = new Set();
 const failedFonts = new Set();
-const pageCache = new Map();
+const fontLoadPromises = new Map();
+const pageCache = new Map();          // LRU
+const pendingPages = new Map();       // جلوگیری از fetch تکراری
 
 let surahListData = null;
 let selectedVerse = null;
@@ -1337,6 +1421,10 @@ let tafsirLoading = false;
 
 let asmaData = null;
 let tafsirFontSize = 17;
+
+// ═══ کاهش نور شب ═══
+let textBrightness = 100;
+let dimOverlayLevel = 0;
 
 const $ = id => document.getElementById(id);
 const quranPageEl   = $('quranPage');
@@ -1384,6 +1472,12 @@ const surahListEl   = $('surahList');
 const surahSearch   = $('surahSearch');
 const toastEl       = $('toast');
 
+// ═══ اسلایدرهای کاهش نور شب ═══
+const textBrightnessSlider = $('textBrightnessSlider');
+const textBrightnessValue  = $('textBrightnessValue');
+const dimOverlaySlider     = $('dimOverlaySlider');
+const dimOverlayValue      = $('dimOverlayValue');
+
 // ═══════════════════════════════════════════════════════════════
 //  UTILS
 // ═══════════════════════════════════════════════════════════════
@@ -1418,64 +1512,175 @@ function updatePageInfo(pageNum, data) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  کاهش نور شب
+// ═══════════════════════════════════════════════════════════════
+function applyTextBrightness(pct) {
+    textBrightness = Math.max(10, Math.min(100, Math.round(Number(pct) || 100)));
+    document.documentElement.style.setProperty('--text-brightness', String(textBrightness / 100));
+    textBrightnessValue.textContent = toAr(textBrightness) + '٪';
+    if (+textBrightnessSlider.value !== textBrightness) textBrightnessSlider.value = textBrightness;
+    try { localStorage.setItem('quran_text_brightness', String(textBrightness)); } catch(e) {}
+}
+
+function applyDimOverlay(pct) {
+    dimOverlayLevel = Math.max(0, Math.min(95, Math.round(Number(pct) || 0)));
+    document.documentElement.style.setProperty('--dim-overlay', String(dimOverlayLevel / 100));
+    dimOverlayValue.textContent = toAr(dimOverlayLevel) + '٪';
+    if (+dimOverlaySlider.value !== dimOverlayLevel) dimOverlaySlider.value = dimOverlayLevel;
+    try { localStorage.setItem('quran_dim_overlay', String(dimOverlayLevel)); } catch(e) {}
+}
+
+textBrightnessSlider.addEventListener('input', e => applyTextBrightness(e.target.value));
+dimOverlaySlider.addEventListener('input', e => applyDimOverlay(e.target.value));
+
+// ═══════════════════════════════════════════════════════════════
 //  FONT LOADING
 // ═══════════════════════════════════════════════════════════════
 function loadFont(fontFamily) {
-    if (!fontFamily || loadedFonts.has(fontFamily)) return Promise.resolve();
-    loadedFonts.add(fontFamily);
+    if (!fontFamily) return Promise.resolve();
+    if (failedFonts.has(fontFamily)) return Promise.resolve();
+    if (fontLoadPromises.has(fontFamily)) return fontLoadPromises.get(fontFamily);
 
     const url = `fonts/${fontFamily}_W.woff2`;
     const styleId = `font-${fontFamily}`;
 
-    if (document.getElementById(styleId)) {
-        return Promise.resolve();
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            @font-face {
+                font-family: '${fontFamily}';
+                src: url('${url}') format('woff2');
+                font-display: block;
+            }
+        `;
+        document.head.appendChild(style);
     }
 
-    return fetch(url, { method: 'HEAD' })
-        .then(head => {
-            if (!head.ok) {
+    let promise;
+    if (document.fonts && document.fonts.load) {
+        promise = document.fonts.load(`1em '${fontFamily}'`)
+            .then(faces => {
+                if (!faces || faces.length === 0) failedFonts.add(fontFamily);
+            })
+            .catch(() => {
                 failedFonts.add(fontFamily);
-                return;
-            }
-            const style = document.createElement('style');
-            style.id = styleId;
-            style.textContent = `
-                @font-face {
-                    font-family: '${fontFamily}';
-                    src: url('${url}') format('woff2');
-                    font-display: block;
-                }
-            `;
-            document.head.appendChild(style);
+            });
+    } else {
+        promise = Promise.resolve();
+    }
 
-            if (!document.fonts || !document.fonts.load) return;
-
-            return document.fonts.load(`1em '${fontFamily}'`)
-                .then(faces => {
-                    if (!faces || faces.length === 0) {
-                        failedFonts.add(fontFamily);
-                    }
-                })
-                .catch(() => {
-                    failedFonts.add(fontFamily);
-                });
-        })
-        .catch(() => {
-            failedFonts.add(fontFamily);
-        });
+    fontLoadPromises.set(fontFamily, promise);
+    return promise;
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  PAGE DATA  (LRU + dedup)
+// ═══════════════════════════════════════════════════════════════
 async function loadPageData(pageNum) {
-    if (pageCache.has(pageNum)) return pageCache.get(pageNum);
-    const res = await fetch(`${PAGES_PATH}${padPage(pageNum)}.json`);
-    if (!res.ok) throw new Error(`صفحه ${pageNum} پیدا نشد`);
-    const data = await res.json();
-    pageCache.set(pageNum, data);
-    if (pageCache.size > 20) {
-        const firstKey = pageCache.keys().next().value;
-        pageCache.delete(firstKey);
+    if (pageCache.has(pageNum)) {
+        const data = pageCache.get(pageNum);
+        pageCache.delete(pageNum);
+        pageCache.set(pageNum, data);
+        return data;
     }
-    return data;
+    if (pendingPages.has(pageNum)) return pendingPages.get(pageNum);
+
+    const p = fetch(`${PAGES_PATH}${padPage(pageNum)}.json`)
+        .then(res => {
+            if (!res.ok) throw new Error(`صفحه ${pageNum} پیدا نشد`);
+            return res.json();
+        })
+        .then(data => {
+            pageCache.set(pageNum, data);
+            if (pageCache.size > PAGE_CACHE_MAX) {
+                const firstKey = pageCache.keys().next().value;
+                pageCache.delete(firstKey);
+            }
+            return data;
+        })
+        .finally(() => {
+            pendingPages.delete(pageNum);
+        });
+
+    pendingPages.set(pageNum, p);
+    return p;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PREFETCH
+// ═══════════════════════════════════════════════════════════════
+let prefetchScheduled = false;
+let prefetchQueue = [];
+
+function requestIdle(cb) {
+    if (window.requestIdleCallback) return window.requestIdleCallback(cb, { timeout: 2000 });
+    return setTimeout(() => cb({ didTimeout: true, timeRemaining: () => 50 }), 120);
+}
+
+function ensurePrefetched(pageNum) {
+    const targets = [];
+
+    for (let i = 1; i <= PREFETCH_BEHIND; i++) {
+        const p = pageNum - i;
+        if (p >= 1) targets.push(p);
+    }
+
+    let aheadCached = 0;
+    for (let i = 1; i <= PREFETCH_AHEAD; i++) {
+        const p = pageNum + i;
+        if (p > TOTAL_PAGES) break;
+        if (pageCache.has(p)) aheadCached++;
+        else break;
+    }
+
+    if (aheadCached < 1) {
+        for (let i = 1; i <= PREFETCH_AHEAD; i++) {
+            const p = pageNum + i;
+            if (p <= TOTAL_PAGES) targets.push(p);
+        }
+    } else {
+        for (let i = 1; i <= PREFETCH_AHEAD; i++) {
+            const p = pageNum + i;
+            if (p <= TOTAL_PAGES && !pageCache.has(p)) targets.push(p);
+        }
+    }
+
+    const need = [...new Set(targets)].filter(p => !pageCache.has(p) && !pendingPages.has(p));
+    if (need.length === 0) return;
+
+    for (const p of need) {
+        if (!prefetchQueue.includes(p)) prefetchQueue.push(p);
+    }
+    schedulePrefetch();
+}
+
+function schedulePrefetch() {
+    if (prefetchScheduled) return;
+    if (prefetchQueue.length === 0) return;
+    prefetchScheduled = true;
+    requestIdle(prefetchStep);
+}
+
+function prefetchStep(deadline) {
+    prefetchScheduled = false;
+    if (prefetchQueue.length === 0) return;
+
+    const p = prefetchQueue.shift();
+    if (p == null) return;
+
+    if (!pageCache.has(p) && !pendingPages.has(p)) {
+        loadPageData(p).then(data => {
+            const fonts = new Set();
+            if (data.font) fonts.add(data.font);
+            (data.lines || []).forEach(line => {
+                (line.words || []).forEach(w => { if (w.font) fonts.add(w.font); });
+            });
+            Promise.all([...fonts].map(loadFont)).catch(() => {});
+        }).catch(() => {});
+    }
+
+    if (prefetchQueue.length > 0) schedulePrefetch();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1549,7 +1754,7 @@ function makeWordSpan(w, defaultFont) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  BUILD LINE — حالت عادی (موبایل)
+//  BUILD LINE
 // ═══════════════════════════════════════════════════════════════
 function buildLine(line, defaultFont, pageData) {
     const lineEl = document.createElement('div');
@@ -1567,10 +1772,7 @@ function buildLine(line, defaultFont, pageData) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  BUILD FLOW — حالت تمام‌عرض (دسکتاپ)
-//  اصلاح‌شده: ترتیب اصلی خطوط حفظ می‌شود. وقتی به خط بسم‌الله
-//  می‌رسیم، متن قبلی flush می‌شود، بسم‌الله در جای خودش اضافه
-//  می‌شود و یک flow-body جدید برای ادامه متن باز می‌گردد.
+//  BUILD FLOW
 // ═══════════════════════════════════════════════════════════════
 function buildFlow(pageData) {
     const flowContainer = document.createElement('div');
@@ -1611,15 +1813,13 @@ function buildFlow(pageData) {
     };
 
     for (const line of (pageData.lines || [])) {
-        // خط بسم‌الله → در جای خودش، به‌صورت مستقل
         if (isBismillahLine(line)) {
-            flushBody();                                   // متن قبلی را ببند
+            flushBody();
             const lineEl = buildLine(line, pageData.font, pageData);
             lineEl.classList.add('bismillah-line');
-            flowContainer.appendChild(lineEl);             // بسم‌الله سرجای خودش
-            continue;                                      // ادامه با flow-body جدید
+            flowContainer.appendChild(lineEl);
+            continue;
         }
-        // متن عادی → داخل flow-body فعلی
         for (const w of filterSurahHeaderWords(line.words)) {
             appendWord(w);
         }
@@ -1670,27 +1870,28 @@ async function renderPage(pageNum) {
                 frag.appendChild(buildLine(line, data.font, data));
             }
         }
+
         quranPageEl.innerHTML = '';
+        quranPageEl.style.fontSize = '';
         quranPageEl.appendChild(frag);
 
-        updatePageInfo(pageNum, data);
+        if (wideMode) {
+            fitFlowContent();
+            fitBismillahLines();
+        } else {
+            fitContent();
+        }
 
-        requestAnimationFrame(() => {
-            if (myToken !== renderToken) return;
-            if (wideMode) {
-                fitFlowContent();
-                fitBismillahLines();
-            } else {
-                fitContent();
-            }
-            loadingScreen.classList.add('hidden');
-        });
+        updatePageInfo(pageNum, data);
+        loadingScreen.classList.add('hidden');
 
         currentPage = pageNum;
         try { localStorage.setItem('quran_last_page', pageNum); } catch(e) {}
 
         highlightCurrentSurah(pageNum);
         clearVerseSelection();
+
+        ensurePrefetched(pageNum);
 
     } catch (err) {
         if (myToken !== renderToken) return;
@@ -1699,7 +1900,7 @@ async function renderPage(pageNum) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  FIT CONTENT (حالت عادی — موبایل)
+//  FIT CONTENT
 // ═══════════════════════════════════════════════════════════════
 function fitContent() {
     const lines = quranPageEl.children;
@@ -1736,9 +1937,7 @@ function fitContent() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  FIT FLOW (حالت تمام‌عرض — دسکتاپ)
-//  اصلاح‌شده: حالا ممکن است چند flow-body وجود داشته باشد که
-//  با خطوط بسم‌الله از هم جدا شده‌اند. مجموع ارتفاع همه لحاظ می‌شود.
+//  FIT FLOW
 // ═══════════════════════════════════════════════════════════════
 function fitFlowContent() {
     const flowContainer = quranPageEl.querySelector('.page-flow');
@@ -1751,7 +1950,6 @@ function fitFlowContent() {
     const padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
     const availH = flowContainer.clientHeight - padY;
 
-    // ارتفاع خطوط بسم‌الله (ثابت، مستقل از فونت flow-body)
     let bismillahH = 0;
     flowContainer.querySelectorAll(':scope > .quran-line.bismillah-line').forEach(el => {
         bismillahH += el.getBoundingClientRect().height;
@@ -1770,7 +1968,7 @@ function fitFlowContent() {
     for (let i = 0; i < 12; i++) {
         const mid = (lo + hi) / 2;
         bodies.forEach(b => b.style.fontSize = mid + 'px');
-        void bodies[0].offsetHeight;                       // اجبار به reflow
+        void bodies[0].offsetHeight;
         if (totalBodyHeight() <= availForBody) {
             best = mid;
             lo = mid;
@@ -1783,8 +1981,6 @@ function fitFlowContent() {
 
 // ═══════════════════════════════════════════════════════════════
 //  FIT BISMILLAH LINES
-//  اندازه بسم‌الله را با سقف ~25px تنظیم می‌کند تا کروم گلیف
-//  را بیش‌ازحد بزرگ رستر نکند.
 // ═══════════════════════════════════════════════════════════════
 function fitBismillahLines() {
     if (!wideMode) return;
@@ -2362,9 +2558,25 @@ document.addEventListener('keydown', e => {
         return;
     }
     if (tafsirPanel.classList.contains('open')) {
-        if (e.key === 'Escape') closeTafsir();
-        else if (e.key === 'ArrowLeft')  navigateTafsir(1);
-        else if (e.key === 'ArrowRight') navigateTafsir(-1);
+        if (e.key === 'Escape') {
+            closeTafsir();
+        } else if (e.key === 'ArrowLeft') {
+            navigateTafsir(1);
+        } else if (e.key === 'ArrowRight') {
+            navigateTafsir(-1);
+        } else if (e.key === ' ' || e.code === 'Space' || e.key === 'PageDown') {
+            e.preventDefault();
+            tafsirContent.scrollBy({
+                top: tafsirContent.clientHeight * 0.85,
+                behavior: 'smooth'
+            });
+        } else if (e.key === 'PageUp') {
+            e.preventDefault();
+            tafsirContent.scrollBy({
+                top: -tafsirContent.clientHeight * 0.85,
+                behavior: 'smooth'
+            });
+        }
         return;
     }
     if (sidebar.classList.contains('open')) {
@@ -2486,6 +2698,19 @@ async function init() {
         if (tf) tafsirFontSize = parseInt(tf) || 17;
     } catch(e) {}
     setTafsirFontSize(tafsirFontSize);
+
+    // ═══ بازیابی تنظیمات کاهش نور شب ═══
+    try {
+        const tb = parseInt(localStorage.getItem('quran_text_brightness'), 10);
+        if (!isNaN(tb)) textBrightness = tb;
+    } catch(e) {}
+    applyTextBrightness(textBrightness);
+
+    try {
+        const dl = parseInt(localStorage.getItem('quran_dim_overlay'), 10);
+        if (!isNaN(dl)) dimOverlayLevel = dl;
+    } catch(e) {}
+    applyDimOverlay(dimOverlayLevel);
 
     let savedWide = false;
     try {
